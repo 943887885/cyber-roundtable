@@ -1,0 +1,8 @@
+# 自建临时文件
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+# 本地环境配置（如接入自己的后端，用这个文件覆盖占位符）
+.env
+.env.local

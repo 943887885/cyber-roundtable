@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>圆桌纪 · 用户协议与社区规范</title>
+<style>
+:root{
+  --bg:#FAF6EF; --panel:#FFFFFF;
+  --line:#F0E2D2; --line-soft:#F5EADC; --line-strong:#E8D5BE;
+  --ink:#26190D; --ink-2:#9A8A78;
+  --orange:#F25C0C; --orange-deep:#CE4A03; --orange-soft:#FFF3E8; --orange-line:#FFD9B4;
+  --amber:#F5A623;
+  --green-t:#2F7D46; --green-b:#EDF7EE; --green-l:#CBE8D0;
+  --amber-t:#96690A; --amber-b:#FFF7E0; --amber-l:#F3E2AC;
+  --red-t:#D2401E; --red-b:#FFEFE9; --red-l:#FFD3C2;
+  --sh:0 1px 2px rgba(140,90,30,.04), 0 10px 28px -14px rgba(140,90,30,.14);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"MiSans","HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+  font-size:14px;line-height:1.8;
+  background-image:radial-gradient(rgba(210,180,140,.14) 1px, transparent 1px);background-size:18px 18px;
+  display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
+
+/* ── 固定顶栏（split 上区）────────────────────────────── */
+.ag-top{flex:0 0 auto;z-index:20;background:rgba(250,246,239,.9);
+  -webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);
+  border-bottom:1px solid transparent;transition:border-color .22s, box-shadow .22s}
+.ag-top.scrolled{border-bottom-color:var(--line);box-shadow:0 10px 22px -16px rgba(140,90,30,.45)}
+.ag-top-inner{max-width:900px;margin:0 auto;padding:14px 24px 12px}
+.ag-brand{display:flex;align-items:center;gap:12px}
+.ag-mark{width:6px;height:34px;border-radius:4px;background:linear-gradient(180deg,var(--amber),var(--orange));flex:0 0 auto}
+.ag-brand h1{font-size:21px;margin:0;font-weight:700;letter-spacing:2px}
+.ver{font-size:11px;font-weight:700;color:#fff;background:linear-gradient(135deg,#CE4A03,#F25C0C,#F58B4B);padding:2px 9px;border-radius:999px}
+/* 返回按钮：置于品牌圆标「下面一点」的左上角，永远可见 */
+.ag-back{margin-top:11px;display:inline-flex;align-items:center;gap:6px;
+  font-size:13.5px;font-weight:700;color:var(--orange-deep);text-decoration:none;
+  background:var(--orange-soft);border:1px solid var(--orange-line);border-radius:999px;
+  padding:6px 15px 6px 11px;transition:.15s;-webkit-tap-highlight-color:transparent}
+.ag-back svg{width:16px;height:16px;display:block}
+.ag-back:hover{background:#FFE7D0}
+.ag-back:active{transform:scale(.96)}
+
+/* ── 滚动内容区（split 中区，独立滚动）───────────────── */
+.ag-scroll{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ag-wrap{max-width:900px;margin:0 auto;padding:20px 24px 56px}
+.sub{color:var(--ink-2);font-size:13px;margin:2px 0 18px}
+.toc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:20px;box-shadow:var(--sh)}
+.toc b{font-size:13px;color:#A34A0C}
+.toc a{display:inline-block;margin:6px 14px 0 0;font-size:13px;color:var(--orange-deep);text-decoration:none;border-bottom:1px dashed var(--orange-line)}
+.toc a:hover{border-bottom-style:solid}
+.sec-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 26px;margin-bottom:18px;box-shadow:var(--sh);scroll-margin-top:96px}
+.sec-card h2{font-size:17px;margin:0 0 14px;font-weight:700;display:flex;align-items:center;gap:9px}
+.sec-card h2::before{content:"";width:5px;height:19px;border-radius:3px;background:linear-gradient(180deg,var(--amber),var(--orange))}
+.sec-card h3{font-size:14.5px;margin:18px 0 6px;font-weight:600;color:#3D2C1B}
+.sec-card p{margin:6px 0;color:#3D2C1B}
+.sec-card ul{margin:6px 0;padding-left:22px;color:#3D2C1B}
+.sec-card li{margin-bottom:5px}
+.map-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin:10px 0}
+.map-table th{background:#FFF4E8;color:#A34A0C;font-weight:700;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line-strong);border-right:1px solid var(--line-strong)}
+.map-table th:last-child,.map-table td:last-child{border-right:0}
+.map-table td{padding:9px 12px;border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line);vertical-align:top}
+.map-table tr:hover td{background:#FFFBF4}
+.lv{font-weight:700;border-radius:6px;padding:1px 8px;font-size:12px;white-space:nowrap}
+.lv.l1{background:var(--green-b);color:var(--green-t)}
+.lv.l2{background:var(--amber-b);color:var(--amber-t)}
+.lv.l3{background:var(--orange-soft);color:var(--orange-deep)}
+.lv.l4{background:var(--red-b);color:var(--red-t)}
+.lv.l5{background:#2A1206;color:#FFD9B4}
+.note{background:var(--amber-b);border:1px solid var(--amber-l);border-left:4px solid var(--amber);border-radius:12px;padding:11px 16px;font-size:13px;color:var(--amber-t);margin:14px 0}
+.hi{background:var(--orange-soft);border:1px solid var(--orange-line);border-radius:10px;padding:8px 12px;font-size:13px;color:#8A4413;margin:10px 0}
+.footnote{margin-top:26px;padding-top:12px;border-top:1px dashed var(--line-soft);color:var(--ink-2);font-size:12px;text-align:center}
+
+/* ── 固定底栏（split 下区）：回到首页 + 读秒同意 ────────── */
+.ag-bot{flex:0 0 auto;z-index:20;background:rgba(250,246,239,.96);
+  -webkit-backdrop-filter:saturate(1.4) blur(12px);backdrop-filter:saturate(1.4) blur(12px);
+  border-top:1px solid var(--line)}
+.ag-bot-inner{max-width:900px;margin:0 auto;padding:11px 24px calc(11px + env(safe-area-inset-bottom,0px));
+  display:flex;gap:12px;align-items:center}
+.ag-home{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:13.5px;font-weight:700;color:var(--ink);text-decoration:none;
+  background:#fff;border:1px solid var(--line-strong);border-radius:11px;padding:10px 18px;
+  transition:.15s;-webkit-tap-highlight-color:transparent}
+.ag-home:hover{border-color:var(--orange-line);color:var(--orange-deep)}
+.ag-home:active{transform:scale(.97)}
+.ag-agree{flex:1 1 auto;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--amber),var(--orange));border:none;border-radius:11px;
+  padding:11px 18px;cursor:pointer;box-shadow:var(--sh);transition:.15s;-webkit-tap-highlight-color:transparent}
+.ag-agree:hover:not(:disabled){filter:brightness(1.04)}
+.ag-agree:active:not(:disabled){transform:scale(.985)}
+.ag-agree:disabled{opacity:.5;cursor:not-allowed;background:#D9CBB8;box-shadow:none;color:#fff}
+
+@media(max-width:640px){
+  .ag-top-inner{padding:12px 15px 10px}
+  .ag-wrap{padding:16px 15px 48px}
+  .map-table{font-size:12px}.map-table th,.map-table td{padding:7px 8px}
+  .ag-bot-inner{padding:9px 15px calc(9px + env(safe-area-inset-bottom,0px))}
+  .ag-home{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- 固定顶栏：品牌 + 左上角返回（位于橙色圆标下方） -->
+<header class="ag-top" id="ag-top">
+  <div class="ag-top-inner">
+    <div class="ag-brand"><span class="ag-mark"></span><h1>圆桌纪</h1><span class="ver">协议 v1.0</span></div>
+    <a class="ag-back" id="ag-back" href="index.html" title="返回圆桌纪">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>返回
+    </a>
+  </div>
+</header>
+
+<!-- 滚动内容区（独立滚动） -->
+<main class="ag-scroll" id="ag-scroll">
+  <div class="ag-wrap">
+    <div class="sub">用户协议 · 隐私政策 · 社区规范与违规处理 · AI 内容声明 · 未成年人保护 · 账号注销</div>
+
+    <div class="toc">
+      <b>目录</b><br>
+      <a href="#t1">一、用户协议</a>
+      <a href="#t2">二、隐私政策</a>
+      <a href="#t3">三、社区规范与违规处理</a>
+      <a href="#t4">四、AI 内容声明</a>
+      <a href="#t5">五、未成年人保护</a>
+      <a href="#t6">六、账号注销</a>
+    </div>
+
+    <div class="note">本文档是「圆桌纪」与你之间的约定。你在使用前请完整阅读；一旦注册或使用，即视为已接受本协议全部条款。<b>更新时间：2026-10-12</b>。</div>
+
+    <!-- 一 -->
+    <div class="sec-card" id="t1">
+      <h2>一、用户协议</h2>
+      <h3>1.1 服务说明</h3>
+      <p>圆桌纪是一个<b>真人圆桌讨论</b>工具：由发起人提出问题、邀请做过的人进桌交流，发言留痕，并可由发起人提炼成纪要。我们提供的是工具与场地，桌上观点由发言人自负其责。</p>
+      <h3>1.2 账号与身份</h3>
+      <ul>
+        <li>使用手机号验证码登录注册；你可额外用微信登录并绑定同一手机号，两侧数据会合并为一个账号。</li>
+        <li>你应保证所用手机号为本人所有，并对账号下的一切行为负责。</li>
+        <li><b>实名门槛</b>：进桌发言须完成手机号核验；平台不要求真实姓名，昵称可自定，但<b>不得冒用他人身份</b>。</li>
+      </ul>
+      <h3>1.3 内容归属（与多数平台不同）</h3>
+      <div class="hi">你在圆桌中发表的内容，<b>归属你本人与本次圆桌的发起者</b>。参与者可自行选择单条发言的可见范围（实名 / 匿名 / 仅发起人可见 / 仅自己可见）。<b>平台不将你的发言用于推广、训练或其他营利用途</b>，除非另行取得你的明确授权。</div>
+      <p>你在桌内以代号展示，真实身份是否公开由你决定；你的席位默认不对外公开，平台不向你主动推送通知。他人若希望与你私下联系，须经你进桌时同意的对谈模式（见 2.3）。</p>
+      <h3>1.4 行为规范</h3>
+      <p>不得发布违法、侵权、辱骂、骚扰、色情低俗、宣扬负能量或破坏讨论秩序的内容。具体分级与处理见「三、社区规范与违规处理」。</p>
+      <h3>1.5 积分与付费</h3>
+      <ul>
+        <li>积分用于：发起圆桌（10 分）、进桌（2 分，申请审批与付费进桌同价）、对谈模式（5 分，解锁同桌某位成员的身份与其手机号以便私下继续交流）等。</li>
+        <li>积分可由「表态」获得（发言被认同达到门槛有奖励），后续开放充值。充值积分<b>不可退款、不可转让、不可提现</b>。</li>
+        <li>积分规则以页面实时展示为准。</li>
+      </ul>
+    </div>
+
+    <!-- 二 -->
+    <div class="sec-card" id="t2">
+      <h2>二、隐私政策</h2>
+      <h3>2.1 我们收集什么</h3>
+      <ul>
+        <li><b>手机号</b>：用于登录与身份核验，加密存储，桌内其他成员默认看不到。</li>
+        <li><b>设备指纹</b>：用于防刷、风控与异常登录识别（不含你的通讯录、相册等）。</li>
+        <li><b>访问日志</b>：进桌、发言、导出等动作留痕，用于安全与纠纷追溯。</li>
+        <li><b>昵称与自述</b>：你主动填写的信息。</li>
+      </ul>
+      <h3>2.2 如何使用</h3>
+      <p>仅用于提供圆桌服务、安全风控、纠纷处理与产品改进。<b>不会出售你的个人信息。</b></p>
+      <h3>2.3 手机号对外提供</h3>
+      <div class="note">桌上默认只显示你的<b>代号</b>（由系统生成，非手机号）。当同桌成员支付积分开启<b>对谈模式</b>时，其可看到你的身份与手机号——这是你进桌时同意的规则。如不希望被看到，请勿进入需要互认身份的圆桌。</div>
+      <h3>2.4 存储与共享</h3>
+      <p>数据存储于中国境内服务器。除法律法规要求或你明确授权外，不向第三方提供你的个人信息。</p>
+      <h3>2.5 你的权利</h3>
+      <p>你可访问、更正、删除自己的信息，并可注销账号（见第六条）。相关请求可通过页面「设置」或联系平台发起。</p>
+    </div>
+
+    <!-- 三 -->
+    <div class="sec-card" id="t3">
+      <h2>三、社区规范与违规处理</h2>
+      <h3>3.1 违规类型</h3>
+      <table class="map-table">
+        <colgroup><col style="width:26%"><col style="width:74%"></colgroup>
+        <thead><tr><th>类别</th><th>举例</th></tr></thead>
+        <tbody>
+          <tr><td>人身攻击</td><td>谩骂、侮辱、人身攻击、骚扰</td></tr>
+          <tr><td>不当言论</td><td>色情低俗、歧视、地域黑、恶意引战</td></tr>
+          <tr><td>违法内容</td><td>恐怖主义、极端主义、封建迷信、危害国家安全、涉政敏感</td></tr>
+          <tr><td>价值导向</td><td>宣扬负能量、不正当价值观、诱导（诈骗 / 传销 / 赌博）</td></tr>
+          <tr><td>秩序</td><td>广告、刷屏、垃圾信息、恶意举报</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 违规分级与处理（五级）</h3>
+      <table class="map-table">
+        <colgroup><col style="width:14%"><col style="width:16%"><col style="width:36%"><col style="width:34%"></colgroup>
+        <thead><tr><th>等级</th><th>名称</th><th>典型情形</th><th>处置</th></tr></thead>
+        <tbody>
+          <tr><td><span class="lv l1">L1</span></td><td>轻微</td><td>语气冲、轻度阴阳、轻微刷屏</td><td>提示 / 警告（不扣分）</td></tr>
+          <tr><td><span class="lv l2">L2</span></td><td>一般</td><td>明显不当言论、轻度攻击</td><td>警告 + 扣 2 积分</td></tr>
+          <tr><td><span class="lv l3">L3</span></td><td>较重</td><td>谩骂侮辱、恶意引战、违规广告</td><td>限制功能 24 小时（只能看，不能参与 / 发起）+ 扣 5 积分</td></tr>
+          <tr><td><span class="lv l4">L4</span></td><td>严重</td><td>色情低俗、歧视、负能量诱导</td><td>封禁（24 小时 / 3 天 / 7 天 / 30 天）+ 扣积分</td></tr>
+          <tr><td><span class="lv l5">L5</span></td><td>极重</td><td>恐怖、反动、危害国家安全、违法</td><td>永久封停 + 保存记录 + 依法向主管部门报告</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.3 谁来处理：两条通道</h3>
+      <ul>
+        <li><b>平台通道</b>：由平台对全站违规进行处置（警告 / 扣分 / 限制功能 / 封号）。涉及违法内容的，平台依法保存记录并报告，不因任何一方要求而放行。</li>
+        <li><b>发起人通道</b>：每张桌的发起人可对<b>本桌</b>成员采取：<b>禁言</b>（只能看不能发）、<b>小黑屋</b>（暂时看不了也参与不了）、<b>踢出</b>（移出本桌并可设为永久）。发起人处置只在本桌生效。</li>
+      </ul>
+      <div class="note">平台处罚由人工复核决定（机器仅做初筛打标）；<b>L5 的「保存记录 + 报告」是法定义务</b>，不是可选项。</div>
+
+      <h3>3.4 申诉</h3>
+      <p>你对处罚有异议的，可通过页面「设置 / 联系平台」发起申诉，由平台复核。（申诉通道建设中）</p>
+    </div>
+
+    <!-- 四 -->
+    <div class="sec-card" id="t4">
+      <h2>四、AI 内容声明</h2>
+      <p>依据《人工智能生成合成内容标识办法》（2025 年 9 月 1 日施行）及配套强制性国家标准，凡由人工智能生成或合成的内容，本平台一律<b>显著标识</b>：</p>
+      <ul>
+        <li><b>显式标识</b>：界面上以「AI 生成」「AI 发起」等角标明确提示；导出的文件中同样标注。</li>
+        <li><b>隐式标识</b>：在文件元数据中嵌入含「AIGC」字段的标识，便于溯源。</li>
+        <li><b>不得删除、篡改、伪造或隐匿</b>上述标识。</li>
+      </ul>
+      <p>AI 生成内容仅供参考，不构成专业意见。真人发言由发言人本人负责，平台不因 AI 参与而改变责任的归属。</p>
+    </div>
+
+    <!-- 五 -->
+    <div class="sec-card" id="t5">
+      <h2>五、未成年人保护</h2>
+      <ul>
+        <li>本服务面向成年人。未满 18 周岁的用户须在监护人同意与指导下使用。</li>
+        <li><b>未满 14 周岁</b>不得单独注册或使用本服务。</li>
+        <li>监护人发现未成年人未经同意使用的，可联系平台协助处理其账号。</li>
+      </ul>
+    </div>
+
+    <!-- 六 -->
+    <div class="sec-card" id="t6">
+      <h2>六、账号注销</h2>
+      <ul>
+        <li>你可在「设置」中申请注销账号。</li>
+        <li>注销后进入 <b>30 天冷静期</b>，期间可撤销；冷静期届满，账号与你发布的个人内容将被删除或匿名化处理。</li>
+        <li>为履行法定义务或处理纠纷，必要的留痕记录会在法定期限内继续保存。</li>
+      </ul>
+    </div>
+
+    <div class="footnote">圆桌纪 · 圆桌讨论 · 发言留痕 · 纪要沉淀</div>
+  </div>
+</main>
+
+<!-- 固定底栏：回到首页 + 读秒同意 -->
+<footer class="ag-bot">
+  <div class="ag-bot-inner">
+    <a class="ag-home" id="ag-home" href="index.html">回到首页</a>
+    <button class="ag-agree" id="ag-agree" disabled>已阅读并同意（3s）</button>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  /* 顶栏滚动态阴影（split 中区独立滚动时给出层次） */
+  var sc=document.getElementById('ag-scroll'), top=document.getElementById('ag-top');
+  if(sc&&top){ sc.addEventListener('scroll',function(){ top.classList.toggle('scrolled', sc.scrollTop>6); },{passive:true}); }
+  /* 回首页链接透传参数（与 index.html 一致，兼容微信 OAuth 回调带回的 search/hash） */
+  var back=document.getElementById('ag-back'), home=document.getElementById('ag-home');
+  var qs=location.search||'', hs=location.hash||'';
+  if(back) back.href='index.html'+qs+hs;
+  if(home) home.href='index.html'+qs+hs;
+  /* 读秒闸门：3 秒后解锁「同意并进入圆桌纪」（合规停留，不打扰阅读） */
+  var btn=document.getElementById('ag-agree'); if(!btn) return;
+  var left=3, t=setInterval(function(){
+    left--;
+    if(left<=0){ clearInterval(t); btn.disabled=false; btn.textContent='同意并进入圆桌纪'; }
+    else { btn.textContent='已阅读并同意（'+left+'s）'; }
+  },1000);
+  btn.addEventListener('click',function(){ if(btn.disabled) return; location.href='index.html'+qs+hs; });
+})();
+</script>
+</body>
+</html>
