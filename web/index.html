@@ -738,6 +738,12 @@ body.modal-open{overflow:hidden}
         <div id="me-msg" class="hidden" style="font-size:12.5px;margin-top:10px;text-align:center"></div>
       </div>
 
+      <div class="sec-card" style="margin-top:16px" id="me-meet-card">
+        <div class="sec-sub" style="margin:0 0 8px">求见</div>
+        <div class="hintline" style="line-height:1.9">想私下认识你，对方要先发「求见」，可附一句理由。你同意后，对方付的 5 积分转给你；拒绝或 24 小时内未回应，积分自动退回对方。<b>同意与否都不会暴露手机号。</b></div>
+        <div id="me-meet-list" style="margin-top:10px"></div>
+      </div>
+
       <div class="sec-card" style="margin-top:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
           <div class="sec-sub" style="margin:0">我的画像</div>
@@ -1177,9 +1183,18 @@ body.modal-open{overflow:hidden}
   <div class="sec-card" style="max-width:380px;width:100%">
     <h2 style="font-size:16px" id="ask-title">确认操作</h2>
     <div class="hintline" id="ask-msg" style="line-height:1.9;margin:12px 0 4px;white-space:pre-line"></div>
+    <div id="ask-input-wrap" class="hidden" style="margin-top:10px">
+      <textarea id="ask-input" rows="3" maxlength="60" oninput="askMeetCount()"
+        style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit;font-size:13px;line-height:1.7;resize:none;outline:none"
+        placeholder="选填"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <span class="hintline" style="font-size:11.5px;margin:0">理由会展示给对方，决定要不要回应</span>
+        <span class="hintline" id="ask-count" style="font-size:11.5px;margin:0">0/60</span>
+      </div>
+    </div>
     <div class="row" style="gap:10px;justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" onclick="askCancel()">取消</button>
-      <button class="btn primary" onclick="askOk()">确定</button>
+      <button class="btn primary" id="ask-ok-btn" onclick="askOk()">确定</button>
     </div>
   </div>
 </div>
@@ -1302,18 +1317,46 @@ function userPhone(u){
 function hhmm(iso){ if(!iso) return ''; var d=new Date(iso); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
 function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show');},2300); }
 /* 站内确认框：替代原生 confirm（浏览器自带弹窗与全站风格不符），返回 Promise<boolean> */
-function askConfirm(title, msg){
+function askConfirm(title, msg, opts){
+  opts = opts || {};
   return new Promise(function(resolve){
     var m=$('ask-modal');
-    if(!m){ resolve(window.confirm(msg)); return; } /* 兜底：结构缺失时不阻塞流程 */
+    if(!m){ /* 兜底：结构缺失时不阻塞流程 */
+      if(opts.input){ var v=window.prompt(msg||'', ''); resolve(v===null ? null : {text:String(v||'')}); return; }
+      resolve(window.confirm(msg)); return;
+    }
     $('ask-title').textContent=title||'确认操作';
     $('ask-msg').textContent=msg||'';
+    var wrap=$('ask-input-wrap'), ta=$('ask-input'), okb=$('ask-ok-btn');
+    m._input = !!opts.input;
+    if(wrap && ta){
+      if(m._input){
+        wrap.classList.remove('hidden');
+        ta.value='';
+        ta.maxLength = opts.maxlen||60;
+        ta.placeholder = opts.placeholder||'选填';
+        askMeetCount();
+        if(!opts.keepText) setTimeout(function(){ try{ ta.focus(); }catch(e){} }, 60);
+      } else { wrap.classList.add('hidden'); }
+    }
+    if(okb) okb.textContent = opts.okText || '确定';
     m.classList.remove('hidden');
     m._resolve=function(v){ m.classList.add('hidden'); m._resolve=null; resolve(v); };
   });
 }
-function askOk(){ var m=$('ask-modal'); if(m && m._resolve) m._resolve(true); }
-function askCancel(){ var m=$('ask-modal'); if(m && m._resolve) m._resolve(false); }
+/* input 模式：数字数（理由选填，超长由 maxlength 截住） */
+function askMeetCount(){
+  var ta=$('ask-input'), c=$('ask-count');
+  if(!ta || !c) return;
+  var n=String(ta.value||'').length;
+  c.textContent = n+'/'+(ta.maxLength>0?ta.maxLength:60);
+}
+function askOk(){
+  var m=$('ask-modal'); if(!m || !m._resolve) return;
+  if(m._input){ var ta=$('ask-input'); var v=ta?String(ta.value||''):''; m._resolve({text:v.trim()}); }
+  else m._resolve(true);
+}
+function askCancel(){ var m=$('ask-modal'); if(m && m._resolve) m._resolve(m._input ? null : false); }
 
 var VIEWS=['boot','login','bind','me','fb','list','desk','door','wait','room','aichat','admin'];
 var curView='boot';
@@ -2011,7 +2054,7 @@ function togglePersonaPublic(){
   paintPersonaPublic();
   toast(on ? '画像已设为公开' : '画像已设为仅自己可见');
 }
-function openMe(){ if(!S.user){ show('login'); return; } show('me'); paintIdentity(); paintPersonaPublic(); loadLedger(); }
+function openMe(){ if(!S.user){ show('login'); return; } show('me'); paintIdentity(); paintPersonaPublic(); loadLedger(); loadMeMeets(); }
 /* 积分流水：本人 ledger 最近 50 条，只读展示 */
 var LEDGER_LABEL={ create_roundtable:'召集圆桌', refund_create_fail:'建桌失败退款',
   /* —— 与服务端 rt_credit_ledger.reason 真值对齐（2026-10-12 提取 pg_proc 函数体核对）—— */
@@ -3382,12 +3425,15 @@ function renderMembers(){
     }
     d.innerHTML='<div class="avatar"'+(m.uid?' data-uid="'+esc(m.uid)+'"':'')+'>'+esc((m.nickname||'参').slice(0,1))+'</div>'+
       '<div style="flex:1"><div class="nick">'+esc(m.nickname||'参与者')+chips+'</div>'+metaHtml+'</div>';
-    /* 对聊（解锁身份）：真人成员可付费解锁联系方式，24h 内同一人不重复扣；自己与 AI 不参与 */
+    /* 求见（2026-10-27 改造，取代「付费解锁身份与手机号」）：三态 = 可求见 / 等回音 / 已同意（⚠ 同意后仅转积分，暂未做私聊通道与身份揭示） */
     if(HAS_RT && !DEMO && m.uid && !m.isSelf && !m.isAi){
       var ub=document.createElement('button'); ub.className='btn ghost sm'; ub.style.flexShrink='0';
-      ub.textContent = (S.unlockedUid && S.unlockedUid[m.uid]) ? '已开启对谈' : '与 TA 对谈 · 5 积分';
-      ub.onclick=(function(uid,btn){ return function(){ unlockMember(uid, btn); }; })(m.uid, ub);
+      var mst=(S.meetSent||{})[m.uid];
+      if(mst==='accepted'){ ub.textContent='已同意'; ub.disabled=true; }
+      else if(mst==='pending'){ ub.textContent='已求见 · 等回音'; ub.disabled=true; }
+      else { ub.textContent='求见 · 5 积分'; ub.onclick=(function(uid,btn){ return function(){ askMember(uid, btn); }; })(m.uid, ub); }
       d.appendChild(ub);
+      if(S.rt) ensureMeetSent(S.rt.id);
     } else if(m.isAi){
       /* AI 对谈入口（2026-10-12 产品拍板：AI 可参与对谈，扣 5 积分，24h 内同一 AI 不重复扣） */
       if(HAS_RT || DEMO){
@@ -3423,25 +3469,81 @@ function renderMembers(){
     box.appendChild(wrap);
   });
 }
-/* 对谈模式：桌上看到的是代号，想私下深聊某位成员，付 5 积分解锁其身份与手机号（24h 内对同一人不重复扣） */
-function unlockMember(uid, btn){
+/* 求见（2026-10-27 产品改造，取代「付费解锁身份与手机号」）。
+   规则：扣 5 分作「打扰成本」→ 对方同意则这 5 分转给对方（不揭示身份、不解锁手机号）；拒绝或 24h 未回应全额退回。
+   手机号永不解锁，也不揭示真名；同意后仅转积分，私聊通道尚未实现（见设计稿 5.4）。 */
+function askMember(uid, btn){
   if(btn.disabled) return;
-  askConfirm('开启与 TA 的对谈？','扣 5 积分，24 小时内对同一人不重复扣费。').then(function(ok){
+  askConfirm('发出求见？','扣 5 积分作打扰成本（先冻结）。对方同意后，这 5 分转给 TA；拒绝或 24 小时内未回应，全额退回。理由选填，会展示给对方。',
+    { input:true, okText:'发出求见', maxlen:60, placeholder:'比如：看你在结算域做过账务，想聊聊对账自动化的边界（选填）' }
+  ).then(function(ok){
     if(!ok) return;
-    btn.disabled=true; btn.textContent='开启中…';
-    RT.unlockIdentity(uid, S.rt.id).then(function(r){
+    var reason = String((ok && ok.text) || '').trim().slice(0,60);
+    btn.disabled=true; btn.textContent='发送中…';
+    RT.askMeet(uid, S.rt.id, reason).then(function(r){
       if(r && r.ok){
-        S.unlockedUid = S.unlockedUid || {}; S.unlockedUid[uid]=true;
-        btn.textContent='已开启对谈';
-        toast('已开启对谈');
+        S.meetSent = S.meetSent || {};
+        S.meetSent[uid] = r.state || 'pending';
+        if(r.state==='accepted'){ btn.textContent='已同意'; toast('对方已同意你的求见，5 积分已转给 TA'); }
+        else { btn.textContent='已求见 · 等回音'; toast(r.charged ? '求见已发出，扣 5 积分（同意后转给对方，拒绝退回）' : '之前已发过求见，等对方回音'); }
         if(r.balance != null) paintCredits(r.balance);
       } else {
-        btn.disabled=false; btn.textContent='与 TA 对谈 · 5 积分';
+        btn.disabled=false; btn.textContent='求见 · 5 积分';
         var code=r && r.code;
-        toast(code==='insufficient' ? '积分不足（对谈需 5 分）' : (code==='bad_target' ? '对方不在本桌' : (r && r.msg) || '开启失败，请重试'));
+        toast(code==='insufficient' ? '积分不足（求见需 5 分）' : (code==='bad_target' ? '对方不在本桌' : (r && r.msg) || '求见失败，请重试'));
       }
-    }).catch(function(e){ btn.disabled=false; btn.textContent='与 TA 对谈 · 5 积分'; toast('开启失败：'+(e.message||e)); });
+    }).catch(function(e){ btn.disabled=false; btn.textContent='求见 · 5 积分'; toast('求见失败：'+(e.message||e)); });
   });
+}
+/* 进桌拉一次「我发出的求见」，把状态标到按钮（按桌缓存，换桌重拉） */
+function ensureMeetSent(rtId){
+  if(!HAS_RT || DEMO || !rtId) return;
+  if(S.meetSentFor === String(rtId)) return;
+  S.meetSentFor = String(rtId);
+  RT.meetList('sent').then(function(list){
+    S.meetSent = S.meetSent || {};
+    (list||[]).forEach(function(x){ if(x && String(x.rt_id)===String(rtId)) S.meetSent[x.to_uid]=x.state; });
+    if(curView==='room') renderMembers();
+  });
+}
+/* 回应端：待我回应的求见（我的身份页） */
+function loadMeMeets(){
+  var box=$('me-meet-list'); if(!box) return;
+  if(!HAS_RT || DEMO){ box.innerHTML='<div class="hintline">本地演示模式，看不到真实求见。</div>'; return; }
+  box.innerHTML='<div class="hintline">正在加载…</div>';
+  RT.meetList('received').then(function(list){
+    var pend=(list||[]).filter(function(x){ return x && x.state==='pending'; });
+    if(!pend.length){ box.innerHTML='<div class="hintline">暂时没有待你回应的求见。</div>'; return; }
+    box.innerHTML='';
+    pend.forEach(function(x){
+      var row=document.createElement('div');
+      row.style.cssText='padding:10px 0;border-top:1px solid var(--line-soft)';
+      row.innerHTML='<div style="font-size:13px"><b>'+esc(x.peer_name||'某位成员')+'</b><span style="color:var(--ink-2);font-size:12px">'+(x.rt_title?(' · '+esc(x.rt_title)):'')+'</span></div>'+
+        (x.reason?'<div style="font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.7">「'+esc(x.reason)+'」</div>':'');
+      var bw=document.createElement('div'); bw.className='row'; bw.style.cssText='gap:8px;margin-top:8px';
+      var ok=document.createElement('button'); ok.className='btn primary sm'; ok.textContent='同意 · 收下 5 积分';
+      var no=document.createElement('button'); no.className='btn ghost sm'; no.textContent='婉拒';
+      ok.onclick=function(){ respondMe(x.id, true, ok, no); };
+      no.onclick=function(){ respondMe(x.id, false, ok, no); };
+      bw.appendChild(ok); bw.appendChild(no); row.appendChild(bw);
+      box.appendChild(row);
+    });
+  }).catch(function(){ box.innerHTML='<div class="hintline">加载失败，下拉刷新再试。</div>'; });
+}
+function respondMe(id, accept, okBtn, noBtn){
+  okBtn.disabled=true; noBtn.disabled=true;
+  RT.respondMeet(id, accept).then(function(r){
+    if(r && r.ok){
+      toast(accept ? '已同意；5 积分已到账' : '已婉拒，积分已退回对方');
+      if(r.balance != null) paintCredits(r.balance);
+      loadMeMeets();
+    } else {
+      okBtn.disabled=false; noBtn.disabled=false;
+      var c=r && r.code;
+      toast(c==='expired' ? '这条求见已过期，积分已退回对方' : ((r && r.msg) || '操作失败，请重试'));
+      if(c==='expired') loadMeMeets();
+    }
+  }).catch(function(e){ okBtn.disabled=false; noBtn.disabled=false; toast('操作失败：'+(e.message||e)); });
 }
 /* ---------------- AI 对谈（2026-10-12 产品拍板）：与 AI 成员直接对话，扣 5 积分，
    24h 内同一 AI 不重复扣；LLM 真流式（打字机），服务端存上下文；流水 reason=ai_chat ---------------- */
@@ -4190,7 +4292,7 @@ window.handleModeration=handleModeration;
 window.handleReport=handleReport; window.handleAppeal=handleAppeal; window.appealPenalty=appealPenalty;
 window.confirmProof=confirmProof; window.cancelProof=cancelProof;
 window.scrollToApplicants=scrollToApplicants; window.setDeskEst=setDeskEst;
-window.askConfirm=askConfirm; window.askOk=askOk; window.askCancel=askCancel;
+window.askConfirm=askConfirm; window.askOk=askOk; window.askCancel=askCancel; window.askMeetCount=askMeetCount;
 window.saveAdConfig=saveAdConfig; window.paintGuestShare=paintGuestShare;
 
 /* ---------------- 启动 ---------------- */

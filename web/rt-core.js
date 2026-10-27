@@ -538,14 +538,35 @@
     });
   }
 
-  /* 解锁同桌成员身份：扣 5 分，24 小时内同一人对同一人不重复扣（rt_unlock_identity） */
-  /* 产品语义 = 对谈模式：与同桌某位成员开启一对一交流，需先解锁其身份 */
-  function unlockIdentity(targetUid, rtId) {
-    return cloud.database.rpc('rt_unlock_identity', { p_target_uid: targetUid, p_rt_id: rtId })
+  /* 求见（2026-10-27 改造，取代「付费解锁身份」rt_unlock_identity，后者已在库端停用）
+     规则：匿名发言零成本；想私下认识某人＝发求见，扣 5 分作「打扰成本」（先冻结）。
+           对方同意 → 双向互见，这 5 分转给对方；拒绝或 24h 未回应 → 全额退回。
+           手机号永不解锁，只打通站内私聊。 */
+  function askMeet(targetUid, rtId, reason) {
+    return cloud.database.rpc('rt_ask_meet', { p_rt_id: rtId, p_to_uid: targetUid, p_reason: reason || null })
       .then(function (r) {
         if (r.error) return { ok: false, code: 'error', msg: r.error.message };
         return one(r.data) || { ok: false, code: 'error' };
       });
+  }
+  /* 回应求见：accept=true 同意（5 分转给我）；false 拒绝（退回对方） */
+  function respondMeet(reqId, accept) {
+    return cloud.database.rpc('rt_respond_meet', { p_req_id: reqId, p_accept: !!accept })
+      .then(function (r) {
+        if (r.error) return { ok: false, code: 'error', msg: r.error.message };
+        return one(r.data) || { ok: false, code: 'error' };
+      });
+  }
+  /* 求见列表：scope='received' 待我回应 / 'sent' 我发出的 */
+  function meetList(scope) {
+    return cloud.database.rpc('rt_meet_list', { p_scope: scope || 'received' })
+      .then(function (r) {
+        if (r.error) return [];
+        var d = r.data;
+        if (Array.isArray(d) && d.length === 1 && Array.isArray(d[0])) d = d[0];
+        return Array.isArray(d) ? d : [];
+      })
+      .catch(function () { return []; });
   }
   /* 归一：RPC 可能返回裸对象、单元素数组或 jsonb。取到那个对象。 */
   function one(d) {
@@ -1342,7 +1363,7 @@
     aiChatHistory: aiChatHistory, aiChatSend: aiChatSend,
     isAdmin: isAdmin, adminOverview: adminOverview, adminRoundtables: adminRoundtables, adminUsers: adminUsers,
     adminConfigList: adminConfigList, adminConfigSet: adminConfigSet,
-    adminAppeals: adminAppeals, adminAppealHandle: adminAppealHandle, adminPenalties: adminPenalties, myPendingApps: myPendingApps, approveJoinV2: approveJoinV2, rejectJoinV2: rejectJoinV2, unlockIdentity: unlockIdentity,
+    adminAppeals: adminAppeals, adminAppealHandle: adminAppealHandle, adminPenalties: adminPenalties, myPendingApps: myPendingApps, approveJoinV2: approveJoinV2, rejectJoinV2: rejectJoinV2, askMeet: askMeet, respondMeet: respondMeet, meetList: meetList,
     aiAdminRoles: aiAdminRoles, aiAdminRoleGet: aiAdminRoleGet, aiAdminRoleSave: aiAdminRoleSave, aiAdminRoleToggle: aiAdminRoleToggle,
     uploadAvatar: uploadAvatar, clearAvatar: clearAvatar, avatarUrls: avatarUrls, avatarMap: avatarMap,
     reportSubmit: reportSubmit, feedbackSubmit: feedbackSubmit, personaFeedbackSubmit: personaFeedbackSubmit, myStats: myStats,
