@@ -740,7 +740,7 @@ body.modal-open{overflow:hidden}
 
       <div class="sec-card" style="margin-top:16px" id="me-meet-card">
         <div class="sec-sub" style="margin:0 0 8px">求见</div>
-        <div class="hintline" style="line-height:1.9">想私下认识你，对方要先发「求见」，可附一句理由。你同意后，对方付的 5 积分转给你；拒绝或 24 小时内未回应，积分自动退回对方。<b>同意与否都不会暴露手机号。</b></div>
+        <div class="hintline" style="line-height:1.9">想私下认识你，对方要先发「求见」，可附一句理由。你同意后，双方各开一条一对一私聊，对方付的 5 积分转给你；拒绝或 24 小时内未回应，积分自动退回对方。<b>私聊里只显示昵称或代号，同意与否都不会暴露手机号。</b></div>
         <div id="me-meet-list" style="margin-top:10px"></div>
       </div>
 
@@ -1013,6 +1013,30 @@ body.modal-open{overflow:hidden}
           <button class="btn primary" id="ac-send" onclick="sendAiChat()" style="height:38px">发送</button>
         </div>
         <div style="color:var(--ink-2);font-size:11.5px;margin-top:8px" id="ac-foot">发送即表示同意内容规范；对话内容经安全校验。积分消耗可在「我的身份」页查看流水。</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-chat" class="hidden">
+    <div class="center-narrow" style="padding-bottom:60px">
+      <div class="navback">
+        <button class="navback-btn" onclick="chatBack()" aria-label="返回">←</button>
+        <h2 class="navback-t">私聊</h2>
+      </div>
+      <div class="sec-card">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="avatar" style="width:40px;height:40px;font-size:16px" id="cht-avatar">—</div>
+          <div style="flex:1">
+            <div style="font-size:15.5px;font-weight:600"><span id="cht-name">—</span> <span class="chip gray">私聊</span></div>
+            <div style="color:var(--ink-2);font-size:12px;margin-top:2px" id="cht-sub">只显示昵称或代号 · 真实身份与手机号永不解锁</div>
+          </div>
+        </div>
+        <div id="cht-list" style="margin-top:16px;display:flex;flex-direction:column;gap:10px;min-height:200px"></div>
+        <div style="margin-top:14px;display:flex;gap:8px;align-items:flex-end">
+          <textarea class="input" id="cht-input" rows="2" placeholder="说点什么…" style="flex:1;resize:none;font-size:13.5px" maxlength="500"></textarea>
+          <button class="btn primary" id="cht-send" onclick="sendChatMsg()" style="height:38px">发送</button>
+        </div>
+        <div style="color:var(--ink-2);font-size:11.5px;margin-top:8px">一分钟内最多 20 条；对方在线时约 5 秒内收到。这条会话只有你们两人看得到。</div>
       </div>
     </div>
   </div>
@@ -1358,7 +1382,7 @@ function askOk(){
 }
 function askCancel(){ var m=$('ask-modal'); if(m && m._resolve) m._resolve(m._input ? null : false); }
 
-var VIEWS=['boot','login','bind','me','fb','list','desk','door','wait','room','aichat','admin'];
+var VIEWS=['boot','login','bind','me','fb','list','desk','door','wait','room','aichat','chat','admin'];
 var curView='boot';
 /* 失焦遮蔽只保护有内容可看的视图；登录/门口等页无需遮蔽（否则截图二维码/复制链接都会被盖） */
 var SHIELD_VIEWS={ room:1, desk:1, wait:1 };
@@ -3429,7 +3453,7 @@ function renderMembers(){
     if(HAS_RT && !DEMO && m.uid && !m.isSelf && !m.isAi){
       var ub=document.createElement('button'); ub.className='btn ghost sm'; ub.style.flexShrink='0';
       var mst=(S.meetSent||{})[m.uid];
-      if(mst==='accepted'){ ub.textContent='已同意'; ub.disabled=true; }
+      if(mst==='accepted'){ ub.textContent='私聊'; ub.onclick=(function(uid,nick){ return function(){ openChat(uid, S.rt && S.rt.id, nick); }; })(m.uid, m.nickname); }
       else if(mst==='pending'){ ub.textContent='已求见 · 等回音'; ub.disabled=true; }
       else { ub.textContent='求见 · 5 积分'; ub.onclick=(function(uid,btn){ return function(){ askMember(uid, btn); }; })(m.uid, ub); }
       d.appendChild(ub);
@@ -3500,9 +3524,12 @@ function ensureMeetSent(rtId){
   if(!HAS_RT || DEMO || !rtId) return;
   if(S.meetSentFor === String(rtId)) return;
   S.meetSentFor = String(rtId);
-  RT.meetList('sent').then(function(list){
+  /* 两个方向都要拉：我发出的看 to_uid；我同意过的（别人求见我）看 from_uid——否则双向通道建好了，成员卡上他还停在「求见 · 5 积分」 */
+  Promise.all([RT.meetList('sent'), RT.meetList('received')]).then(function(res){
+    var sent=(res&&res[0])||[], recv=(res&&res[1])||[];
     S.meetSent = S.meetSent || {};
-    (list||[]).forEach(function(x){ if(x && String(x.rt_id)===String(rtId)) S.meetSent[x.to_uid]=x.state; });
+    sent.forEach(function(x){ if(x && String(x.rt_id)===String(rtId)) S.meetSent[x.to_uid]=x.state; });
+    recv.forEach(function(x){ if(x && String(x.rt_id)===String(rtId) && x.state==='accepted') S.meetSent[x.from_uid]='accepted'; });
     if(curView==='room') renderMembers();
   });
 }
@@ -3513,19 +3540,28 @@ function loadMeMeets(){
   box.innerHTML='<div class="hintline">正在加载…</div>';
   RT.meetList('received').then(function(list){
     var pend=(list||[]).filter(function(x){ return x && x.state==='pending'; });
-    if(!pend.length){ box.innerHTML='<div class="hintline">暂时没有待你回应的求见。</div>'; return; }
+    var acc =(list||[]).filter(function(x){ return x && x.state==='accepted'; });
+    if(!pend.length && !acc.length){ box.innerHTML='<div class="hintline">暂时没有待你回应的求见。</div>'; return; }
     box.innerHTML='';
-    pend.forEach(function(x){
+    pend.concat(acc).forEach(function(x){
       var row=document.createElement('div');
       row.style.cssText='padding:10px 0;border-top:1px solid var(--line-soft)';
-      row.innerHTML='<div style="font-size:13px"><b>'+esc(x.peer_name||'某位成员')+'</b><span style="color:var(--ink-2);font-size:12px">'+(x.rt_title?(' · '+esc(x.rt_title)):'')+'</span></div>'+
+      row.innerHTML='<div style="font-size:13px"><b>'+esc(x.peer_name||'某位成员')+'</b><span style="color:var(--ink-2);font-size:12px">'+(x.rt_title?(' · '+esc(x.rt_title)):'')+(x.state==='accepted'?' · 已同意':'')+'</span></div>'+
         (x.reason?'<div style="font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.7">「'+esc(x.reason)+'」</div>':'');
       var bw=document.createElement('div'); bw.className='row'; bw.style.cssText='gap:8px;margin-top:8px';
-      var ok=document.createElement('button'); ok.className='btn primary sm'; ok.textContent='同意 · 收下 5 积分';
-      var no=document.createElement('button'); no.className='btn ghost sm'; no.textContent='婉拒';
-      ok.onclick=function(){ respondMe(x.id, true, ok, no); };
-      no.onclick=function(){ respondMe(x.id, false, ok, no); };
-      bw.appendChild(ok); bw.appendChild(no); row.appendChild(bw);
+      if(x.state==='accepted'){
+        /* 通道已建好：直接进去说话。身份仍不互曝，手机号不解锁。 */
+        var go=document.createElement('button'); go.className='btn primary sm'; go.textContent='私聊';
+        go.onclick=(function(pu,pn,rid){ return function(){ openChat(pu, rid, pn); }; })(x.from_uid, x.peer_name, x.rt_id);
+        bw.appendChild(go);
+      } else {
+        var ok=document.createElement('button'); ok.className='btn primary sm'; ok.textContent='同意 · 收下 5 积分';
+        var no=document.createElement('button'); no.className='btn ghost sm'; no.textContent='婉拒';
+        ok.onclick=function(){ respondMe(x.id, true, ok, no); };
+        no.onclick=function(){ respondMe(x.id, false, ok, no); };
+        bw.appendChild(ok); bw.appendChild(no);
+      }
+      row.appendChild(bw);
       box.appendChild(row);
     });
   }).catch(function(){ box.innerHTML='<div class="hintline">加载失败，下拉刷新再试。</div>'; });
@@ -3545,6 +3581,96 @@ function respondMe(id, accept, okBtn, noBtn){
     }
   }).catch(function(e){ okBtn.disabled=false; noBtn.disabled=false; toast('操作失败：'+(e.message||e)); });
 }
+/* ---------------- 私聊（2026-10-27 方案 A）：求见被同意后开一对一通道 ----------------
+   三条硬约束：只显示昵称或代号（不揭示真名）；手机号永不解锁；非会话成员读不到、发不进（库端判定）。
+   通道由 rt_respond_meet 在「同意」那一刻建好，这里只负责进入与收发。 */
+var CHAT={tid:null,peer:null,name:null,last:0,timer:null,from:'me'};
+function openChat(peerUid, rtId, peerName){
+  if(!peerUid){ toast('找不到对方'); return; }
+  if(!HAS_RT || DEMO){ toast('本地演示模式不带私聊（需要真实账号）'); return; }
+  if(!S.user){ show('login'); return; }
+  CHAT.from = (curView==='chat') ? CHAT.from : curView;
+  $('cht-name').textContent = peerName || '对方';
+  $('cht-avatar').textContent = (peerName||'对').charAt(0);
+  $('cht-list').innerHTML = '<div class="hintline">正在打开会话…</div>';
+  RT.chatEnsure(rtId || null, peerUid).then(function(r){
+    if(!r || !r.ok){
+      var c = r && r.code;
+      $('cht-list').innerHTML = '';
+      toast(c==='no_meet' ? '对方同意求见后才能私聊' : (c==='bad' ? '不能和自己私聊' : ((r&&r.msg) || '打不开会话')));
+      return;
+    }
+    CHAT.tid = r.thread_id; CHAT.peer = peerUid; CHAT.last = 0;
+    if(r.peer_name){ CHAT.name = r.peer_name; $('cht-name').textContent = r.peer_name; $('cht-avatar').textContent = r.peer_name.charAt(0); }
+    else { CHAT.name = peerName || '对方'; }
+    bindChatInput();
+    show('chat');
+    loadChat(true);
+    startChatPoll();
+  }).catch(function(e){ toast('打不开会话：'+(e.message||e)); });
+}
+function bindChatInput(){
+  var ta = $('cht-input'); if(!ta || ta._bound) return;
+  ta._bound = true;
+  ta.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChatMsg(); }
+  });
+}
+function loadChat(reset){
+  if(!CHAT.tid || !HAS_RT) return;
+  var box = $('cht-list'); if(!box) return;
+  RT.chatMsgs(CHAT.tid, reset ? 0 : CHAT.last).then(function(list){
+    if(reset){
+      box.innerHTML = '';
+      if(!list || !list.length){
+        box.innerHTML = '<div class="hintline">还没有消息。这条会话已经开好了，先说句话打个招呼。</div>';
+        return;
+      }
+    }
+    var added = 0;
+    (list||[]).forEach(function(m){
+      if(!m) return;
+      if(m.id){ var id = Number(m.id)||0; if(id > CHAT.last) CHAT.last = id; }
+      box.appendChild(chatBubble(m)); added++;
+    });
+    if(added){
+      var hint = box.querySelector('.hintline'); if(hint) hint.remove();
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+  }).catch(function(){});
+}
+function chatBubble(m){
+  var row = document.createElement('div');
+  row.className = 'ac-row ' + (m.mine ? 'me' : 'ai');
+  var wrap = document.createElement('div'); wrap.className = 'ac-wrap';
+  var b = document.createElement('div'); b.className = 'ac-bubble';
+  b.textContent = m.body || '';
+  wrap.appendChild(b); row.appendChild(wrap);
+  return row;
+}
+function sendChatMsg(){
+  if(!CHAT.tid){ toast('会话还没打开'); return; }
+  var ta = $('cht-input'); if(!ta) return;
+  var v = String(ta.value||'').trim();
+  if(!v){ toast('说点什么再发'); return; }
+  var btn = $('cht-send'); if(btn) btn.disabled = true;
+  RT.chatSend(CHAT.tid, v).then(function(r){
+    if(btn) btn.disabled = false;
+    if(r && r.ok){ ta.value = ''; loadChat(false); return; }
+    var c = r && r.code;
+    toast(c==='rate' ? '一分钟最多 20 条，慢一点' : (c==='forbidden' ? '这条会话不属于你' : ((r&&r.msg) || '发送失败')));
+  }).catch(function(e){ if(btn) btn.disabled = false; toast('发送失败：'+(e.message||e)); });
+}
+function startChatPoll(){
+  stopChatPoll();
+  CHAT.timer = setInterval(function(){
+    if(curView !== 'chat'){ stopChatPoll(); return; }
+    loadChat(false);
+  }, 5000);
+}
+function stopChatPoll(){ if(CHAT.timer){ clearInterval(CHAT.timer); CHAT.timer = null; } }
+function chatBack(){ stopChatPoll(); show(CHAT.from || 'me'); }
+
 /* ---------------- AI 对谈（2026-10-12 产品拍板）：与 AI 成员直接对话，扣 5 积分，
    24h 内同一 AI 不重复扣；LLM 真流式（打字机），服务端存上下文；流水 reason=ai_chat ---------------- */
 var AC={slug:null,name:null,busy:false,from:'room',lastSent:0,quota:null};
@@ -4293,6 +4419,7 @@ window.handleReport=handleReport; window.handleAppeal=handleAppeal; window.appea
 window.confirmProof=confirmProof; window.cancelProof=cancelProof;
 window.scrollToApplicants=scrollToApplicants; window.setDeskEst=setDeskEst;
 window.askConfirm=askConfirm; window.askOk=askOk; window.askCancel=askCancel; window.askMeetCount=askMeetCount;
+window.openChat=openChat; window.sendChatMsg=sendChatMsg; window.chatBack=chatBack;
 window.saveAdConfig=saveAdConfig; window.paintGuestShare=paintGuestShare;
 
 /* ---------------- 启动 ---------------- */

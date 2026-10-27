@@ -568,6 +568,43 @@
       })
       .catch(function () { return []; });
   }
+  /* ---- 私聊（2026-10-27 方案 A）：求见被同意后，双方各有一条一对一通道 ----
+     硬约束：只显示昵称/代号，真实身份与手机号永不解锁；非会话成员读不到、发不进。 */
+  function chatEnsure(rtId, peerUid) {
+    return cloud.database.rpc('rt_chat_ensure', { p_rt_id: rtId || null, p_to_uid: peerUid })
+      .then(function (r) {
+        if (r.error) return { ok: false, code: 'error', msg: r.error.message };
+        return one(r.data) || { ok: false, code: 'error' };
+      });
+  }
+  function chatSend(threadId, body) {
+    return cloud.database.rpc('rt_chat_send', { p_thread_id: threadId, p_body: body })
+      .then(function (r) {
+        if (r.error) return { ok: false, code: 'error', msg: r.error.message };
+        return one(r.data) || { ok: false, code: 'error' };
+      });
+  }
+  /* afterId=0 取最近 50 条；>0 只取比它新的（轮询增量） */
+  function chatMsgs(threadId, afterId) {
+    return cloud.database.rpc('rt_chat_msgs', { p_thread_id: threadId, p_after: afterId || 0 })
+      .then(function (r) {
+        if (r.error) return [];
+        var d = r.data;
+        if (Array.isArray(d) && d.length === 1 && Array.isArray(d[0])) d = d[0];
+        return Array.isArray(d) ? d : [];
+      })
+      .catch(function () { return []; });
+  }
+  function chatList() {
+    return cloud.database.rpc('rt_chat_list', {})
+      .then(function (r) {
+        if (r.error) return [];
+        var d = r.data;
+        if (Array.isArray(d) && d.length === 1 && Array.isArray(d[0])) d = d[0];
+        return Array.isArray(d) ? d : [];
+      })
+      .catch(function () { return []; });
+  }
   /* 归一：RPC 可能返回裸对象、单元素数组或 jsonb。取到那个对象。 */
   function one(d) {
     if (d == null) return null;
@@ -1364,6 +1401,7 @@
     isAdmin: isAdmin, adminOverview: adminOverview, adminRoundtables: adminRoundtables, adminUsers: adminUsers,
     adminConfigList: adminConfigList, adminConfigSet: adminConfigSet,
     adminAppeals: adminAppeals, adminAppealHandle: adminAppealHandle, adminPenalties: adminPenalties, myPendingApps: myPendingApps, approveJoinV2: approveJoinV2, rejectJoinV2: rejectJoinV2, askMeet: askMeet, respondMeet: respondMeet, meetList: meetList,
+    chatEnsure: chatEnsure, chatSend: chatSend, chatMsgs: chatMsgs, chatList: chatList,
     aiAdminRoles: aiAdminRoles, aiAdminRoleGet: aiAdminRoleGet, aiAdminRoleSave: aiAdminRoleSave, aiAdminRoleToggle: aiAdminRoleToggle,
     uploadAvatar: uploadAvatar, clearAvatar: clearAvatar, avatarUrls: avatarUrls, avatarMap: avatarMap,
     reportSubmit: reportSubmit, feedbackSubmit: feedbackSubmit, personaFeedbackSubmit: personaFeedbackSubmit, myStats: myStats,
